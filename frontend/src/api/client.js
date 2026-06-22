@@ -24,8 +24,24 @@ client.interceptors.response.use(
   },
 );
 
-export const errorMessage = (error) => error.response?.data?.errors?.[0]?.message
-  || error.response?.data?.message
-  || 'Something went wrong. Please try again.';
+export const errorMessage = (error) => {
+  const data = error?.response?.data;
+  // Field-level validation errors take priority, then the server's message.
+  const serverMessage = data?.errors?.[0]?.message || data?.message;
+  if (serverMessage) return serverMessage;
+
+  // No response means the request never completed — distinguish timeout from a
+  // failed connection so the user knows whether to simply retry.
+  if (!error?.response) {
+    if (error?.code === 'ECONNABORTED' || error?.code === 'ETIMEDOUT') {
+      return 'The request timed out. Please try again.';
+    }
+    if (error?.request) {
+      return 'Unable to reach the server. Check your connection and try again.';
+    }
+  }
+
+  return 'Something went wrong. Please try again.';
+};
 
 export default client;
