@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "11ca9710-2f6c-4ae7-aa10-976958a214fa",
     "name": "Table & Thyme API",
-    "description": "Online food ordering REST API collection",
+    "description": "Online food ordering REST API collection.\n\nAuth: Register or Login first — both store the returned JWT into the `token` collection variable automatically, and every other request inherits Bearer auth from the collection. \"Browse Products\" stores the first result's id into `productId`, and \"Place Order\" / \"Create Product\" capture `orderId` / `productId`, so the cart, order, and admin flows chain without manual copy-paste.\n\nSet `baseUrl` if the API is not at the default address.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -17,6 +17,26 @@
   ],
   "item": [
     {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "auth": { "type": "noauth" },
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:5000/api/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "health"]
+            },
+            "description": "Liveness probe. Not under /api/v1 and not rate-limited."
+          }
+        }
+      ]
+    },
+    {
       "name": "Authentication",
       "item": [
         {
@@ -29,7 +49,8 @@
               "mode": "raw",
               "raw": "{\n  \"name\": \"Demo User\",\n  \"email\": \"demo@example.com\",\n  \"password\": \"Demo1234\"\n}"
             },
-            "url": "{{baseUrl}}/auth/register"
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Password must be at least 8 characters and contain an uppercase letter, a lowercase letter, and a number."
           },
           "event": [
             {
@@ -52,7 +73,8 @@
               "mode": "raw",
               "raw": "{\n  \"email\": \"demo@example.com\",\n  \"password\": \"Demo1234\"\n}"
             },
-            "url": "{{baseUrl}}/auth/login"
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Sign in. To exercise admin-only endpoints, log in with the seeded admin (ADMIN_EMAIL / ADMIN_PASSWORD from backend/.env)."
           },
           "event": [
             {
@@ -79,8 +101,33 @@
           "auth": { "type": "noauth" },
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/products?limit=12&category=Pizza"
-          }
+            "url": {
+              "raw": "{{baseUrl}}/products?page=1&limit=12&category=Pizza&search=&minPrice=&maxPrice=&sort=-createdAt",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "12", "description": "1-100" },
+                { "key": "category", "value": "Pizza", "description": "Pizza | Burgers | Pasta | Drinks | Desserts" },
+                { "key": "search", "value": "", "description": "Full-text keyword (alias: keyword)" },
+                { "key": "minPrice", "value": "", "description": "Minimum price filter" },
+                { "key": "maxPrice", "value": "", "description": "Maximum price filter" },
+                { "key": "sort", "value": "-createdAt", "description": "-createdAt | createdAt | price | -price | name | -name | price_asc | price_desc" }
+              ]
+            },
+            "description": "List available products. All query params are optional."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json().data;",
+                  "if (Array.isArray(data) && data.length) pm.collectionVariables.set('productId', data[0]._id);"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Product Details",
@@ -103,7 +150,12 @@
           "auth": { "type": "noauth" },
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/products/trending?limit=8"
+            "url": {
+              "raw": "{{baseUrl}}/products/trending?limit=8",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "trending"],
+              "query": [{ "key": "limit", "value": "8", "description": "1-20" }]
+            }
           }
         }
       ]
@@ -161,7 +213,8 @@
               "mode": "raw",
               "raw": "{\n  \"shippingAddress\": {\n    \"label\": \"Home\",\n    \"street\": \"15 Nile Street\",\n    \"city\": \"Cairo\",\n    \"phone\": \"+201001234567\",\n    \"notes\": \"Call on arrival\"\n  },\n  \"paymentMethod\": \"COD\"\n}"
             },
-            "url": "{{baseUrl}}/orders"
+            "url": "{{baseUrl}}/orders",
+            "description": "Creates an order from the current cart. paymentMethod is COD or ONLINE. street, city, and phone are required; label and notes are optional."
           },
           "event": [
             {
@@ -176,7 +229,18 @@
         },
         {
           "name": "My Orders",
-          "request": { "method": "GET", "url": "{{baseUrl}}/orders" }
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/orders?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10", "description": "1-100" }
+              ]
+            }
+          }
         },
         {
           "name": "Order Details",
@@ -198,7 +262,8 @@
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": { "mode": "raw", "raw": "{ \"simulate\": \"success\" }" },
-            "url": "{{baseUrl}}/orders/{{orderId}}/pay"
+            "url": "{{baseUrl}}/orders/{{orderId}}/pay",
+            "description": "Mock online payment. Send \"simulate\": \"failure\" to force a failed payment (HTTP 402); any other value succeeds."
           }
         }
       ]
@@ -214,7 +279,24 @@
           "name": "All Orders",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/admin/orders?status=Pending"
+            "url": {
+              "raw": "{{baseUrl}}/admin/orders?page=1&limit=20&status=Pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "orders"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20", "description": "1-100" },
+                { "key": "status", "value": "Pending", "description": "Pending | Confirmed | Preparing | Out for Delivery | Delivered | Cancelled" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Order Details (Admin)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/orders/{{orderId}}",
+            "description": "Fetch any order by id (admin only)."
           }
         },
         {
@@ -223,14 +305,27 @@
             "method": "PATCH",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": { "mode": "raw", "raw": "{ \"status\": \"Confirmed\" }" },
-            "url": "{{baseUrl}}/admin/orders/{{orderId}}/status"
+            "url": "{{baseUrl}}/admin/orders/{{orderId}}/status",
+            "description": "Allowed status values: Pending, Confirmed, Preparing, Out for Delivery, Delivered, Cancelled. Only forward operational transitions are accepted."
           }
         },
         {
           "name": "All Products",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/admin/products?limit=100"
+            "url": {
+              "raw": "{{baseUrl}}/admin/products?page=1&limit=100&available=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "products"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "100", "description": "1-100" },
+                { "key": "available", "value": "true", "description": "true | false — filter by availability (admin-only filter)" },
+                { "key": "category", "value": "", "description": "Pizza | Burgers | Pasta | Drinks | Desserts", "disabled": true },
+                { "key": "search", "value": "", "description": "Full-text keyword", "disabled": true }
+              ]
+            },
+            "description": "Lists all products including unavailable ones."
           }
         },
         {
@@ -249,8 +344,19 @@
                 { "key": "image", "type": "file", "src": "" }
               ]
             },
-            "url": "{{baseUrl}}/admin/products"
-          }
+            "url": "{{baseUrl}}/admin/products",
+            "description": "Multipart form. An image file is required. Select a file for the `image` field before sending."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code < 300) pm.collectionVariables.set('productId', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Update Product",
@@ -261,7 +367,8 @@
               "mode": "raw",
               "raw": "{ \"price\": 200, \"stock\": 15 }"
             },
-            "url": "{{baseUrl}}/admin/products/{{productId}}"
+            "url": "{{baseUrl}}/admin/products/{{productId}}",
+            "description": "Send JSON to update fields, or switch the body to form-data with an `image` file to replace the product image. All fields are optional."
           }
         },
         {
