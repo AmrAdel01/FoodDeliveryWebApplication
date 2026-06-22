@@ -1,0 +1,23 @@
+import { Router } from 'express';
+import * as adminController from '../controllers/admin.controller.js';
+import * as productController from '../controllers/product.controller.js';
+import { ROLES } from '../constants/index.js';
+import { authenticate, authorize } from '../middlewares/auth.js';
+import { validate } from '../middlewares/validate.js';
+import { uploadProductImage } from '../middlewares/upload.js';
+import { sanitizeRequest } from '../middlewares/sanitize.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
+import { orderIdRule, updateOrderStatusRules } from '../validators/order.validators.js';
+import { createProductRules, productIdRule, updateProductRules } from '../validators/product.validators.js';
+
+const router = Router();
+router.use(authenticate, authorize(ROLES.ADMIN));
+router.get('/stats', asyncHandler(adminController.stats));
+router.get('/orders', asyncHandler(adminController.orders));
+router.get('/orders/:id', orderIdRule, validate, asyncHandler(adminController.order));
+router.patch('/orders/:id/status', updateOrderStatusRules, validate, asyncHandler(adminController.updateStatus));
+router.get('/products', asyncHandler(productController.adminList));
+router.post('/products', uploadProductImage, sanitizeRequest, createProductRules, validate, asyncHandler(productController.create));
+router.patch('/products/:id', uploadProductImage, sanitizeRequest, productIdRule, updateProductRules, validate, asyncHandler(productController.update));
+router.delete('/products/:id', productIdRule, validate, asyncHandler(productController.remove));
+export default router;
