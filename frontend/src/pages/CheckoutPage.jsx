@@ -1,0 +1,18 @@
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Navigate, useNavigate } from 'react-router-dom';
+import client, { errorMessage } from '../api/client.js';
+import { useCart } from '../context/CartContext.jsx';
+import { formatMoney } from '../utils/format.js';
+
+export default function CheckoutPage() {
+  const { t, i18n } = useTranslation(); const navigate = useNavigate(); const { cart, refresh } = useCart();
+  const [form, setForm] = useState({ street: '', city: '', phone: '', label: 'Home', notes: '', paymentMethod: 'COD' }); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
+  if (!cart.items.length) return <Navigate to="/cart" replace />;
+  const update = (key) => (event) => setForm({ ...form, [key]: event.target.value });
+  const submit = async (event) => { event.preventDefault(); setBusy(true); setError(''); try { const { data } = await client.post('/orders', { shippingAddress: { street: form.street, city: form.city, phone: form.phone, label: form.label, notes: form.notes }, paymentMethod: form.paymentMethod }); if (form.paymentMethod === 'ONLINE') await client.post(`/orders/${data.data._id}/pay`, { simulate: 'success' }); await refresh(); navigate('/orders', { state: { placed: true } }); } catch (requestError) { setError(errorMessage(requestError)); } finally { setBusy(false); } };
+  return <section className="page section"><div className="container"><div className="page-title left"><span className="eyebrow">ALMOST THERE</span><h1>{t('checkout.title')}</h1></div><form className="checkout-layout" onSubmit={submit}><div className="checkout-form"><section className="form-section"><h2>1. {t('checkout.address')}</h2><div className="form-grid"><Field label={t('checkout.street')} value={form.street} onChange={update('street')} /><Field label={t('checkout.city')} value={form.city} onChange={update('city')} /><Field label={t('checkout.phone')} value={form.phone} onChange={update('phone')} /><Field label={t('checkout.label')} value={form.label} onChange={update('label')} /><label className="field full"><span>{t('checkout.notes')}</span><textarea value={form.notes} onChange={update('notes')} /></label></div></section><section className="form-section"><h2>2. {t('checkout.payment')}</h2><div className="payment-options"><Payment value="COD" selected={form.paymentMethod} onChange={update('paymentMethod')} label={t('checkout.cod')} detail="Pay when your order arrives" /><Payment value="ONLINE" selected={form.paymentMethod} onChange={update('paymentMethod')} label={t('checkout.online')} detail="Prototype gateway, no real charge" /></div></section>{error && <div className="notice error">{error}</div>}</div><aside className="summary-card"><h2>{t('checkout.summary')}</h2>{cart.items.map((item) => <div className="checkout-line" key={item.product._id}><span>{item.quantity} × {item.product.name}</span><strong>{formatMoney(item.quantity * item.unitPrice, i18n.language)}</strong></div>)}<hr /><div className="summary-row strong"><span>{t('cart.total')}</span><span>{formatMoney(cart.totalPrice, i18n.language)}</span></div><button className="button primary wide" disabled={busy}>{busy ? t('common.loading') : t('checkout.place')}</button></aside></form></div></section>;
+}
+
+function Field({ label, ...props }) { return <label className="field"><span>{label}</span><input required {...props} /></label>; }
+function Payment({ value, selected, onChange, label, detail }) { return <label className={selected === value ? 'payment-option selected' : 'payment-option'}><input type="radio" name="paymentMethod" value={value} checked={selected === value} onChange={onChange} /><span><strong>{label}</strong><small>{detail}</small></span></label>; }
