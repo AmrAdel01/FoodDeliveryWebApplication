@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { errorMessage } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
-import { formatMoney } from '../utils/format.js';
+import { formatMoney, productImage } from '../utils/format.js';
 
 export default function ProductCard({ product, onError }) {
   const { t, i18n } = useTranslation();
@@ -17,7 +17,7 @@ export default function ProductCard({ product, onError }) {
   };
   return <article className="product-card">
     <Link className="product-image" to={`/menu/${product._id}`}>
-      <img src={product.image.secure_url} alt={product.name} loading="lazy" />
+      <img src={productImage(product.image)} alt={product.name} loading="lazy" />
       <span className="category-pill">{product.category}</span>
     </Link>
     <div className="product-body">

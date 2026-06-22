@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import client, { errorMessage } from "../api/client.js";
 import Loading from "../components/Loading.jsx";
-import { formatDate, formatMoney } from "../utils/format.js";
+import { formatDate, formatMoney, productImage } from "../utils/format.js";
 
 const categories = ["Pizza", "Burgers", "Pasta", "Drinks", "Desserts"];
 const statuses = [
@@ -227,7 +227,7 @@ export default function AdminPage() {
                         <tr key={product._id}>
                           <td>
                             <div className="table-product">
-                              <img src={product.image.secure_url} alt="" />
+                              <img src={productImage(product.image)} alt="" />
                               <strong>{product.name}</strong>
                             </div>
                           </td>

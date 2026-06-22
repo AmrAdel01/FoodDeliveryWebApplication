@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import client, { errorMessage } from "../api/client.js";
 import Loading from "../components/Loading.jsx";
-import { formatDate, formatMoney } from "../utils/format.js";
+import { formatDate, formatMoney, productImage } from "../utils/format.js";
 
 export default function OrdersPage() {
   const { t, i18n } = useTranslation();
@@ -82,7 +82,7 @@ export default function OrdersPage() {
                 <div className="order-products">
                   {order.items.map((item) => (
                     <div key={item.product}>
-                    <img src={item.image.secure_url} alt="" />
+                    <img src={productImage(item.image)} alt="" />
                       <span>
                         {item.quantity} × {item.name}
                       </span>

@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { errorMessage } from "../api/client.js";
 import Loading from "../components/Loading.jsx";
 import { useCart } from "../context/CartContext.jsx";
-import { formatMoney } from "../utils/format.js";
+import { formatMoney, productImage } from "../utils/format.js";
 
 export default function CartPage() {
   const { t, i18n } = useTranslation();
@@ -48,7 +48,7 @@ export default function CartPage() {
             <div className="cart-items">
               {cart.items.map((item) => (
                 <article className="cart-item" key={item.product._id}>
-                  <img src={item.product.image.secure_url} alt={item.product.name} />
+                  <img src={productImage(item.product?.image)} alt={item.product.name} />
                   <div className="cart-item-info">
                     <div>
                       <h3>{item.product.name}</h3>

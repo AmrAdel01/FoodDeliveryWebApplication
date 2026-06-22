@@ -38,7 +38,20 @@ app.use(pinoHttp({
   },
 }));
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-app.use(cors({ origin: env.clientUrl.split(',').map((item) => item.trim()), credentials: true }));
+const allowedOrigins = env.clientUrl.split(',').map((item) => item.trim()).filter(Boolean);
+const isLocalOrigin = (origin) => /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+app.use(cors({
+  origin(origin, callback) {
+    // No Origin header: same-origin navigation or non-browser clients (curl, health checks).
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    // In development, accept any localhost/127.0.0.1 port so the dev client is reachable
+    // regardless of which host alias the browser used. Production stays on the allowlist.
+    if (env.nodeEnv !== 'production' && isLocalOrigin(origin)) return callback(null, true);
+    return callback(null, false);
+  },
+  credentials: true,
+}));
 app.use(compression({ threshold: 1024 }));
 app.use(express.json({ limit: '20kb' }));
 app.use(express.urlencoded({ extended: true, limit: '20kb' }));
