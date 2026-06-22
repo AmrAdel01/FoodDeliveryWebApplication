@@ -78,6 +78,8 @@ The frontend uses reusable pages/components, Context API for authentication and 
 
 Open `http://localhost:5173`. The API health endpoint is `http://localhost:5000/api/health`.
 
+Sign in as the admin with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` values from `backend/.env`. For convenience, your local credentials are also kept in the gitignored `CREDENTIALS.local.md`. Never commit real passwords to tracked files.
+
 The seed command requires `ADMIN_PASSWORD`. It uploads generated sample artwork to Cloudinary and stores only each asset's `public_id` and `secure_url`.
 
 ## Commands
