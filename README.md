@@ -50,7 +50,7 @@ The frontend uses reusable pages/components, Context API for authentication and 
 2. Start MongoDB and Redis locally, or use Docker:
 
    ```bash
-   docker compose up -d mongodb
+   docker compose up -d mongodb redis
    ```
 
 3. Create environment files from the included examples:
@@ -90,17 +90,87 @@ The seed command requires `ADMIN_PASSWORD`. It uploads generated sample artwork 
 | `npm run build` | Produce the frontend production bundle |
 | `npm test` | Run backend unit tests |
 | `npm run seed` | Upsert sample products and the admin user |
+| `npm run seed:admin -w backend` | Upsert/reset only the admin user |
 | `npm run migrate:images -w backend` | Move legacy image URLs into Cloudinary metadata |
 | `npm run db:indexes -w backend` | Reconcile MongoDB indexes with the schemas |
 | `npm start -w backend` | Run only the API |
 
-## API and Postman
+## API Reference
 
-- Endpoint reference: [`docs/API.md`](docs/API.md)
-- Backend optimization decisions: [`docs/BACKEND_OPTIMIZATION.md`](docs/BACKEND_OPTIMIZATION.md)
-- Postman collection: [`postman/Table-and-Thyme.postman_collection.json`](postman/Table-and-Thyme.postman_collection.json)
+Base URL: `http://localhost:5000/api/v1`. Protected endpoints require `Authorization: Bearer <jwt>`. Success responses use `{ success, message, data, meta? }`; validation errors return `{ success: false, message, errors }`.
 
-The collection stores JWTs from successful login/register calls automatically. Set its `baseUrl` variable if the API does not run at the default address.
+### Auth
+
+| Method | Endpoint | Access | Body |
+| --- | --- | --- | --- |
+| `POST` | `/auth/register` | Public | `name`, `email`, `password` |
+| `POST` | `/auth/login` | Public | `email`, `password` |
+| `GET` | `/auth/me` | User/Admin | - |
+
+### Products
+
+| Method | Endpoint | Access | Notes |
+| --- | --- | --- | --- |
+| `GET` | `/products` | Public | Supports `page`, `limit`, `category`, `keyword`/`search`, `minPrice`, `maxPrice`, and `sort` |
+| `GET` | `/products/categories` | Public | Available category counts |
+| `GET` | `/products/trending?limit=8` | Public | Products ranked by ordered quantity |
+| `GET` | `/products/:id` | Public | Product details |
+
+Supported product sorts are `-createdAt`, `createdAt`, `-price`, `price`, `-name`, `name`, `price_asc`, and `price_desc`.
+
+### Cart
+
+| Method | Endpoint | Access | Body |
+| --- | --- | --- | --- |
+| `GET` | `/cart` | User/Admin | - |
+| `POST` | `/cart/items` | User/Admin | `productId`, optional `quantity` |
+| `PATCH` | `/cart/items/:productId` | User/Admin | `quantity` |
+| `DELETE` | `/cart/items/:productId` | User/Admin | - |
+| `DELETE` | `/cart` | User/Admin | Clear cart |
+
+Prices and totals are recalculated on the server from current product data.
+
+### Orders
+
+| Method | Endpoint | Access | Body / query |
+| --- | --- | --- | --- |
+| `POST` | `/orders` | User/Admin | `shippingAddress`, `paymentMethod` (`COD` or `ONLINE`) |
+| `GET` | `/orders` | User/Admin | `page`, `limit` |
+| `GET` | `/orders/:id` | Owner | - |
+| `PATCH` | `/orders/:id/cancel` | Owner | Pending/confirmed orders only |
+| `POST` | `/orders/:id/pay` | Owner | `{ "simulate": "success" }` or `{ "simulate": "failure" }` |
+
+Order flow is `Pending -> Confirmed -> Preparing -> Out for Delivery -> Delivered`. Cancellation is allowed only before delivery starts.
+
+### Admin
+
+All admin routes require an authenticated `admin` role.
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/admin/stats` | User, order, product, and paid revenue totals |
+| `GET` | `/admin/products` | All products, including unavailable products |
+| `POST` | `/admin/products` | Create product with multipart image field `image` |
+| `PATCH` | `/admin/products/:id` | Update product fields and optionally replace image |
+| `DELETE` | `/admin/products/:id` | Delete product and Cloudinary image |
+| `GET` | `/admin/orders` | All orders; filter by `status` or `paymentStatus` |
+| `GET` | `/admin/orders/:id` | Order and customer details |
+| `PATCH` | `/admin/orders/:id/status` | Update order status |
+
+Product image uploads accept JPEG, PNG, WebP, and AVIF files up to 5 MB. Images are required on create and optional on update.
+
+The Postman collection is available at [`postman/Table-and-Thyme.postman_collection.json`](postman/Table-and-Thyme.postman_collection.json). It stores JWTs from successful login/register calls automatically.
+
+## Backend Optimization Notes
+
+- Cloudinary is handled by a reusable service layer. Products and order snapshots store only `public_id` and `secure_url`; local image storage and direct third-party URLs are avoided.
+- Product image creates clean up the uploaded asset if database persistence fails. Updates replace the remote image, and product deletion removes the Cloudinary image.
+- Read-only repository queries use `lean()`, explicit `.select()` projections, bounded pagination, stable allowlisted sorting, and parallel count/data reads.
+- Product search uses MongoDB text search. Indexes target real access patterns: product text/category/price reads, user order history, admin order queues, user email, and cart user.
+- Redis caches product lists, product details, category counts, and trending products. Product mutations, stock reservations, cancellations, and deletes invalidate product cache keys automatically.
+- HTTP performance and safety middleware includes compression, rate limiting, Helmet, HPP, CORS, request payload limits, XSS sanitization, and centralized error handling.
+- Pino provides structured request/application logging with sensitive values redacted.
+- Stock reservation is performed concurrently and partial reservations are rolled back with bulk writes if order creation fails.
 
 ## Production Notes
 
