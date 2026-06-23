@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { normalizeAuthenticatedUser } from '../src/middlewares/auth.js';
 import { cacheKeys } from '../src/services/cache.service.js';
 import { CloudinaryImageService } from '../src/services/image.service.js';
 import { buildListOptions } from '../src/services/product.service.js';
@@ -51,4 +52,20 @@ test('Cloudinary adapter exposes only required image metadata', async () => {
     secure_url: 'https://res.cloudinary.com/demo/pizza.webp',
   });
   await service.delete('products/pizza');
+});
+
+test('authenticated lean users expose a stable id field', () => {
+  const user = normalizeAuthenticatedUser({
+    _id: { toString: () => '64f2a0c23fd7b4ed1f4d8a11' },
+    name: 'Customer',
+    email: 'customer@example.com',
+    role: 'user',
+  });
+
+  assert.deepEqual(user, {
+    id: '64f2a0c23fd7b4ed1f4d8a11',
+    name: 'Customer',
+    email: 'customer@example.com',
+    role: 'user',
+  });
 });

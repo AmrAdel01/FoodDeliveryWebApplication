@@ -9,12 +9,12 @@
     "start": "node src/server.js",
     "test": "node --test",
     "seed": "node src/database/seed.js",
+    "seed:admin": "node src/seed/seedAdmin.js",
     "db:indexes": "node src/database/sync-indexes.js",
     "migrate:images": "node src/database/migrate-cloudinary-images.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
-    "bcryptjs": "^3.0.3",
     "cloudinary": "^2.10.0",
     "compression": "^1.8.1",
     "cors": "^2.8.5",

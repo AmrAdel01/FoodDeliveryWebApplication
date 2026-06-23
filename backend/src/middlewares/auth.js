@@ -3,6 +3,15 @@ import { ApiError } from '../utils/ApiError.js';
 import { verifyToken } from '../utils/jwt.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
+export function normalizeAuthenticatedUser(user) {
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
+}
+
 export const authenticate = asyncHandler(async (req, _res, next) => {
   const [scheme, token] = (req.headers.authorization || '').split(' ');
   if (scheme !== 'Bearer' || !token) throw new ApiError(401, 'Authentication required');
@@ -16,7 +25,7 @@ export const authenticate = asyncHandler(async (req, _res, next) => {
 
   const user = await userRepository.findPublicById(payload.sub);
   if (!user) throw new ApiError(401, 'User no longer exists');
-  req.user = user;
+  req.user = normalizeAuthenticatedUser(user);
   next();
 });
 

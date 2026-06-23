@@ -19,24 +19,24 @@ export class CartRepository {
   findOrCreate(userId) {
     return Cart.findOneAndUpdate(
       { user: userId },
-      { $setOnInsert: { items: [], totalPrice: 0 } },
-      { new: true, upsert: true },
+      { $setOnInsert: { user: userId, items: [], totalPrice: 0 } },
+      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true },
     ).exec();
   }
 
   ensureExists(userId) {
     return Cart.findOneAndUpdate(
       { user: userId },
-      { $setOnInsert: { items: [], totalPrice: 0 } },
-      { upsert: true },
+      { $setOnInsert: { user: userId, items: [], totalPrice: 0 } },
+      { upsert: true, runValidators: true, setDefaultsOnInsert: true },
     ).exec();
   }
 
   clear(userId) {
     return Cart.findOneAndUpdate(
       { user: userId },
-      { items: [], totalPrice: 0 },
-      { upsert: true },
+      { $set: { items: [], totalPrice: 0 }, $setOnInsert: { user: userId } },
+      { upsert: true, runValidators: true, setDefaultsOnInsert: true },
     ).exec();
   }
 }
