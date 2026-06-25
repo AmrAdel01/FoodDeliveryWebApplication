@@ -2,6 +2,17 @@ import { ApiError } from '../utils/ApiError.js';
 import { logger } from '../config/logger.js';
 import multer from 'multer';
 
+function duplicateKeyError(error) {
+  const key = Object.keys(error.keyPattern || error.keyValue || {})[0];
+  if (key === 'email') {
+    return new ApiError(409, 'An account with this email already exists', [
+      { field: 'email', message: 'An account with this email already exists' },
+    ]);
+  }
+  if (key === 'user') return new ApiError(409, 'A cart already exists for this user');
+  return new ApiError(409, 'A record with this value already exists');
+}
+
 export function notFound(req, _res, next) {
   next(new ApiError(404, `Route not found: ${req.method} ${req.originalUrl}`));
 }
@@ -12,7 +23,7 @@ export function errorHandler(error, _req, res, _next) {
     normalized = new ApiError(400, error.code === 'LIMIT_FILE_SIZE' ? 'Image must be 5 MB or smaller' : error.message);
   }
   if (error.name === 'CastError') normalized = new ApiError(400, 'Invalid resource identifier');
-  if (error.code === 11000) normalized = new ApiError(409, 'A resource with that value already exists');
+  if (error.code === 11000) normalized = duplicateKeyError(error);
   if (error.name === 'ValidationError') {
     normalized = new ApiError(422, 'Validation failed', Object.values(error.errors).map((item) => ({
       field: item.path,

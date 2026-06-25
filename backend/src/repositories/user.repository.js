@@ -9,6 +9,10 @@ export class UserRepository {
     return User.findOne({ email }).select('+password').exec();
   }
 
+  existsByEmail(email) {
+    return User.exists({ email }).exec();
+  }
+
   create(input) {
     return User.create(input);
   }

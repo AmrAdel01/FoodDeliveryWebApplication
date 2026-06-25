@@ -33,8 +33,12 @@ client.interceptors.response.use(
 
 export const errorMessage = (error) => {
   const data = error?.response?.data;
-  // Field-level validation errors take priority, then the server's message.
-  const serverMessage = data?.errors?.[0]?.message || data?.message;
+  const fieldMessages = Array.isArray(data?.errors)
+    ? [...new Set(data.errors.map((item) => item?.message).filter(Boolean))]
+    : [];
+  if (fieldMessages.length) return fieldMessages.join('; ');
+
+  const serverMessage = data?.message;
   if (serverMessage) return serverMessage;
 
   // No response means the request never completed; distinguish timeout from a

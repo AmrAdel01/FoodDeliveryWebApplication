@@ -10,15 +10,24 @@ function authPayload(user) {
 }
 
 export async function register(input) {
+  const emailExists = await userRepository.existsByEmail(input.email);
+  if (emailExists) throw new ApiError(409, 'An account with this email already exists');
+
   const password = await bcrypt.hash(input.password, SALT_ROUNDS);
-  const user = await userRepository.create({ name: input.name, email: input.email, password });
-  return authPayload(user);
+  try {
+    const user = await userRepository.create({ name: input.name, email: input.email, password });
+    return authPayload(user);
+  } catch (error) {
+    if (error.code === 11000 && (error.keyPattern?.email || error.keyValue?.email)) {
+      throw new ApiError(409, 'An account with this email already exists');
+    }
+    throw error;
+  }
 }
 
 export async function login({ email, password }) {
   const user = await userRepository.findForLogin(email);
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    throw new ApiError(401, 'Invalid email or password');
-  }
+  if (!user) throw new ApiError(404, 'No account found with this email');
+  if (!(await bcrypt.compare(password, user.password))) throw new ApiError(401, 'Incorrect password');
   return authPayload(user);
 }

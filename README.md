@@ -103,7 +103,7 @@ The seed command requires `ADMIN_PASSWORD`. It uploads generated sample artwork 
 - Start command: `npm start` from the `backend` directory, or `npm start -w backend` from the repo root.
 - Health check path: `/api/health`.
 - Required variables: `NODE_ENV=production`, `MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_URL`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`.
-- Set `CLIENT_URL` to the Vercel origin, for example `https://food-delivery-web-application-front-jet.vercel.app`. Add more origins as comma-separated values.
+- Set `CLIENT_URL` to the Vercel origin, for example `https://food-delivery-web-application-front-gules.vercel.app`. Add more origins as comma-separated values.
 - `REDIS_URL` is optional for a demo. Add it only if you provision Redis.
 
 ### Frontend on Vercel
