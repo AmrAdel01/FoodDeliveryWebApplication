@@ -9,7 +9,7 @@ let server;
 async function start() {
   await connectDatabase();
   await connectRedis();
-  server = app.listen(env.port, () => logger.info({ port: env.port }, 'API listening'));
+  server = app.listen(env.port, env.host, () => logger.info({ host: env.host, port: env.port }, 'API listening'));
 }
 
 async function shutdown(signal, exitCode = 0) {

@@ -38,16 +38,18 @@ app.use(pinoHttp({
   },
 }));
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-const allowedOrigins = env.clientUrl.split(',').map((item) => item.trim()).filter(Boolean);
+const normalizeOrigin = (origin) => origin.trim().replace(/\/+$/, '');
+const allowedOrigins = env.clientUrl.split(',').map((item) => normalizeOrigin(item)).filter(Boolean);
 const isLocalOrigin = (origin) => /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 app.use(cors({
   origin(origin, callback) {
     // No Origin header: same-origin navigation or non-browser clients (curl, health checks).
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    const normalizedOrigin = normalizeOrigin(origin);
+    if (allowedOrigins.includes(normalizedOrigin)) return callback(null, true);
     // In development, accept any localhost/127.0.0.1 port so the dev client is reachable
     // regardless of which host alias the browser used. Production stays on the allowlist.
-    if (env.nodeEnv !== 'production' && isLocalOrigin(origin)) return callback(null, true);
+    if (env.nodeEnv !== 'production' && isLocalOrigin(normalizedOrigin)) return callback(null, true);
     return callback(null, false);
   },
   credentials: true,

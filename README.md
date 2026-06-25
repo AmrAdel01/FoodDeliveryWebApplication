@@ -95,6 +95,24 @@ The seed command requires `ADMIN_PASSWORD`. It uploads generated sample artwork 
 | `npm run db:indexes -w backend` | Reconcile MongoDB indexes with the schemas |
 | `npm start -w backend` | Run only the API |
 
+## Deployment
+
+### Backend on Railway
+
+- Use `backend` as the Railway root directory. If you deploy from the repo root instead, the root `npm start` script now starts the backend workspace.
+- Start command: `npm start` from the `backend` directory, or `npm start -w backend` from the repo root.
+- Health check path: `/api/health`.
+- Required variables: `NODE_ENV=production`, `MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_URL`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`.
+- Set `CLIENT_URL` to the Vercel origin, for example `https://food-delivery-web-application-front-jet.vercel.app`. Add more origins as comma-separated values.
+- `REDIS_URL` is optional for a demo. Add it only if you provision Redis.
+
+### Frontend on Vercel
+
+- Use `frontend` as the Vercel root directory.
+- Build command: `npm run build`.
+- Output directory: `dist`.
+- Set `VITE_API_URL` to the Railway API URL, for example `https://your-railway-service.up.railway.app/api/v1`.
+
 ## API Reference
 
 Base URL: `http://localhost:5000/api/v1`. Protected endpoints require `Authorization: Bearer <jwt>`. Success responses use `{ success, message, data, meta? }`; validation errors return `{ success: false, message, errors }`.
@@ -177,6 +195,6 @@ The Postman collection is available at [`postman/Table-and-Thyme.postman_collect
 - Use a managed MongoDB replica set, TLS, and a secrets manager.
 - Serve the frontend build from a CDN and set `CLIENT_URL` to allowed origins (comma separated).
 - Replace the mock payment endpoint with a provider checkout session plus a verified webhook. Never trust a payment result sent by the browser.
-- Redis is required in production and shares cache and rate-limit state across API instances.
+- Redis is optional for small deployments. Add it for shared cache and distributed rate-limit state across multiple API instances.
 - Run the API behind HTTPS and an application-aware reverse proxy.
 - For inventory under high concurrency, move order creation and stock updates into a MongoDB transaction on a replica set.

@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+const DEFAULT_API_URL = 'http://localhost:5000/api/v1';
+const normalizeApiUrl = (value) => {
+  const trimmed = (value || DEFAULT_API_URL).trim().replace(/\/+$/, '');
+  if (!trimmed) return DEFAULT_API_URL;
+  return trimmed.endsWith('/api/v1') ? trimmed : `${trimmed}/api/v1`;
+};
+
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1',
+  baseURL: normalizeApiUrl(import.meta.env.VITE_API_URL),
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -30,7 +37,7 @@ export const errorMessage = (error) => {
   const serverMessage = data?.errors?.[0]?.message || data?.message;
   if (serverMessage) return serverMessage;
 
-  // No response means the request never completed — distinguish timeout from a
+  // No response means the request never completed; distinguish timeout from a
   // failed connection so the user knows whether to simply retry.
   if (!error?.response) {
     if (error?.code === 'ECONNABORTED' || error?.code === 'ETIMEDOUT') {
