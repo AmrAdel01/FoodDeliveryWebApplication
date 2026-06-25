@@ -111,7 +111,7 @@ The seed command requires `ADMIN_PASSWORD`. It uploads generated sample artwork 
 - Use `frontend` as the Vercel root directory.
 - Build command: `npm run build`.
 - Output directory: `dist`.
-- Set `VITE_API_URL` to the Railway API URL, for example `https://your-railway-service.up.railway.app/api/v1`.
+- Set `VITE_API_URL` to the Railway API URL, for example `https://food-ordering-api-production-0c10.up.railway.app/api/v1`.
 
 ## API Reference
 
